@@ -1,0 +1,69 @@
+.main {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 100px 600px;
+    text-align: center;
+  }
+
+.center {
+    color: white;
+    grid-column: span 3;
+    border-radius: 25px;
+    background: #000000;
+    padding: 20px;
+  }
+
+.left {
+    color: white;
+    border-radius: 25px;
+    background: #355C7D;
+    padding: 10px 10px 10px 10px;
+}
+
+.in {
+  color: white;
+  text-align: left;
+  height: 30px;
+  border-radius: 25px;
+  background: #F8B195;
+  opacity: 80%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 10px;
+
+.button {
+  background: #F67280;
+  border-radius: 10px;
+  float: right !important;
+  margin-right: 10px;
+
+}
+
+/* Size for brand */
+nav .navbar-brand
+{
+    font-size: xx-large;
+}
+
+/* Colors for brand */
+nav .navbar-brand .blue
+{
+    color: #537fbe;
+}
+
+nav .navbar-brand .red
+{
+    color: #ea433b;
+}
+
+nav .navbar-brand .yellow
+{
+    color: #f5b82e;
+}
+
+nav .navbar-brand .green
+{
+    color: #2e944b;
+}
