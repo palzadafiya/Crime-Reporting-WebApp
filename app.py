@@ -101,7 +101,6 @@ def register():
         vpassword = request.form.get("vpassword")
         contact = request.form.get("contact")
         role = request.form.get("role")
-        #file = request.files['photo']
         if name == "" or username == "" or password == "" or contact == "":
             return render_template("register.html", error="Name/Username/Password/Contact is missing!")
 
@@ -115,13 +114,6 @@ def register():
             return render_template("register.html",error="Username already exists!")
 
         hashed_password = generate_password_hash(password)
-        
-        # if file and allowed_name(file.filename):
-        #     filename = secure_filename(file.filename)
-        #     name, ext = os.path.splitext(filename)
-        #     new_name = username + ext
-        #     file.save(os.path.join('students-photos', new_name))
-
 
         db.execute(
             "INSERT INTO Users (username, name, hash, role, contact) VALUES (:u, :n, :h, :r, :c)",
@@ -151,24 +143,28 @@ def home():
 @login_required
 def report():
     if request.method == "POST":
+        title = request.form.get("title")
         type_of_crime = request.form.get("type_of_crime")
         severity = request.form.get("severity")
         description = request.form.get("description")
-        media = request.form.get("media")
+        file = request.files['media']
         latitude = request.form.get("latitude")
         longitude = request.form.get("longitude")
         reporter_id =  session["id"]
+        date = request.form.get("date")
         if type_of_crime == "" or severity == "" or description == "" or latitude == "" or longitude == "":
             return render_template("report.html")
+        if file and allowed_name(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join('report-images', filename))
+
+            db.execute("INSERT INTO Crime_Reports (title, crime_type, description, reporter_id, severity, latitude, longitude, date, photo_ref) VALUES(?,?,?,?,?,?,?,?,?)",
+                       title,type_of_crime,description,
+                       reporter_id,severity,latitude,
+                       longitude,date, filename)
+            return redirect("/home")    
         else:
-            db.execute("INSERT INTO Crime_Reports (crime_type, description, reporter_id, severity, latitude, longitude) VALUES(?,?,?,?,?,?)",
-                       type_of_crime,
-                       description,
-                       reporter_id,
-                       severity,
-                       latitude,
-                       longitude)
-            return redirect("/home")        
+            return render_template("report.html", error="Invalid username or file")
     else:
         return render_template("report.html")
     
@@ -184,6 +180,78 @@ def reports(reportId):
     return jsonify(rows)
 
 
+@app.route('/src')
+@login_required
+def src():
+    return render_template("search.html")
 
+@app.route('/search')
+@login_required
+def search_reports():
+    try:
+        # Get query parameters
+        query_params = request.args.to_dict()
+
+        # Extract latitude and longitude from parameters
+        latitude = float(query_params.get('lat', 0))
+        longitude = float(query_params.get('lng', 0))
+
+        # SQL query to find reports around given location within a certain radius
+        sql = """
+            SELECT * FROM Crime_Reports 
+            WHERE 
+                latitude BETWEEN ? AND ? AND 
+                longitude BETWEEN ? AND ? AND 
+                (latitude - ?) * (latitude - ?) + (longitude - ?) * (longitude - ?) <= ? * ?
+        """
+
+        # Parameters for the SQL query (adjust radius as needed, here set to 0.01 degrees approx. 1.1 km)
+        radius = 0.05
+        params = [
+            latitude - radius, latitude + radius,
+            longitude - radius, longitude + radius,
+            latitude, latitude,
+            longitude, longitude,
+            radius, radius
+        ]
+
+        # Optional additional filters based on user input
+        if 'q' in query_params and query_params['q']:
+            sql += " AND (Title LIKE ? OR description LIKE ?)"
+            params.extend(['%' + query_params['q'] + '%', '%' + query_params['q'] + '%'])
+
+        if 'date' in query_params and query_params['date']:
+            sql += " AND Date = ?"
+            params.append(query_params['date'])
+
+        if 'crime_type' in query_params and query_params['crime_type']:
+            sql += " AND crime_type = ?"
+            params.append(query_params['crime_type'])
+
+        # Execute the query
+        rows = db.execute(sql, *params)
+
+        # Prepare JSON response
+        reports = []
+        for row in rows:
+            report = {
+                'report_id': row['report_id'],
+                'Title': row['Title'],
+                'crime_type': row['crime_type'],
+                'description': row['description'],
+                'reporter_id': row['reporter_id'],
+                'severity': row['severity'],
+                'latitude': row['latitude'],
+                'longitude': row['longitude'],
+                'status': row['status'],
+                'Date': row['Date']
+            }
+            reports.append(report)
+
+        return jsonify(reports)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 
 #app.run(host="0.0.0.0", port=50100, debug=True, ssl_context="adhoc")
