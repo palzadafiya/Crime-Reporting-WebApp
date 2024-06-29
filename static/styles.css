@@ -1,3 +1,10 @@
+*{
+  font-family: 'Roboto', sans-serif;
+}
+.body{
+  height: 100vh;
+  background-color: #31363F !important;
+}
 .main {
     display: grid;
     gap: 10px;
@@ -32,6 +39,7 @@
   justify-content: space-between;
   align-items: center;
   padding-left: 10px;
+}
 
 .button {
   background: #F67280;
@@ -42,28 +50,80 @@
 }
 
 /* Size for brand */
-nav .navbar-brand
-{
-    font-size: xx-large;
+.navbar {
+  margin: 0;
+  background-color: #112241 !important;
+  color: whitesmoke !important;
+  border-width: 0;
 }
 
-/* Colors for brand */
-nav .navbar-brand .blue
-{
-    color: #537fbe;
+
+#report-details {
+  padding: 20px;
+}
+#map-container {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
 }
 
-nav .navbar-brand .red
-{
-    color: #ea433b;
+form {
+  width: 100%;
+  margin: 0 auto;
+  padding: 1em;
+  border: 1px solid #ccc;
+  border-radius: 1em;
 }
 
-nav .navbar-brand .yellow
-{
-    color: #f5b82e;
+div + div {
+  margin-top: 1em;
+}
+label {
+  display: block;
+  margin-bottom: .5em;
+}
+input, select, textarea {
+  width: 100%;
+  padding: .5em;
+  border: 1px solid #ccc;
+  border-radius: .5em;
+}
+button {
+  padding: 0.7em;
+  color: #fff;
+  background-color: #6F4E37 !important;
+  border: none;
+  border-radius: .5em;
+  cursor: pointer;
+}
+#map {
+  width: 100%;
+  height: 100%;
+  margin-top: 0;
+  grid-area: 1/2/1/4;
 }
 
-nav .navbar-brand .green
-{
-    color: #2e944b;
+.map-reportform-container{
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  grid-template-rows: 1fr;
+  gap: 10px;
+  height: 100%;
+}
+#report-form{
+  grid-area: 1/1/1/1;
+  background-color: #efe9dc;
+  border: none;
+}
+
+#media{
+  background-color: white;
+}
+
+.nav-link{
+  color: white;
+}
+
+.nav-link:hover{
+  color: #DAC0A3;
 }
