@@ -1,0 +1,128 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Home
+{% endblock %}
+
+{% block head %}
+<title>Crime Reports Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+        }
+        h1 {
+            margin: 0;
+            font-weight: 300;
+        }
+        #map-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        #map {
+            height: 600px;
+            width: 80%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        footer {
+            text-align: center;
+            padding: 10px 0;
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+{% endblock %}
+
+{% block main %}
+<header>
+    <h1>Crime Reports Dashboard</h1>
+</header>
+<div id="map-container">
+    <div id="map"></div>
+</div>
+<div id="crime-details" style="padding: 20px; width: 80%; margin: 0 auto; border: 1px solid #ccc; border-radius: 5px; background-color: #fff;">
+    <h3>Crime Details</h3>
+    <p>Click on a marker to see the details of the crime.</p>
+</div>
+
+<footer>
+    <p>Crime Reports &copy; 2024</p>
+</footer>
+<script>
+    // Set map bounds (world bounds)
+    const southWest = L.latLng(-85, -180),
+          northEast = L.latLng(85, 180),
+          bounds = L.latLngBounds(southWest, northEast);
+
+    const map = L.map('map', {
+        maxZoom: 18,
+        minZoom: 2,
+        maxBounds: bounds,
+        maxBoundsViscosity: 1.0
+    }).setView([22.6708, 71.5724], 8);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 15,
+    }).addTo(map);
+
+    let heatmapLayer, markerLayer;
+    fetch('/get_crime_reports')
+        .then(response => response.json())
+        .then(data => {
+            const heatData = data.map(report => [report.latitude, report.longitude, report.severity]);
+            heatmapLayer = L.heatLayer(heatData, { radius: 25 }).addTo(map);
+
+            markerLayer = L.layerGroup();
+            data.forEach(report => {
+                const marker = L.marker([report.latitude, report.longitude]);
+                marker.on('click', function() {
+                    // Fetch and display the crime details
+                    fetch(`/reports/${report.report_id}`)
+                        .then(response => response.json())
+                        .then(reportDetails => {
+                            document.getElementById('crime-details').innerHTML = `
+                                <h3>Crime Details</h3>
+                                <p><strong>Type:</strong> ${reportDetails.crime_type}</p>
+                                <p><strong>Description:</strong> ${reportDetails.description}</p>
+                                <p><strong>Date:</strong> ${reportDetails.date}</p>
+                                <p><strong>Location:</strong> ${reportDetails.location}</p>
+                            `;
+                        });
+                });
+                markerLayer.addLayer(marker);
+            });
+
+            map.on('zoomend', function() {
+                if (map.getZoom() > 12) {
+                    map.removeLayer(heatmapLayer);
+                    map.addLayer(markerLayer);
+                } else {
+                    map.removeLayer(markerLayer);
+                    map.addLayer(heatmapLayer);
+                }
+            });
+        });
+</script>
+
+{% endblock %}
+
