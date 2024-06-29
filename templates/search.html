@@ -1,0 +1,232 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Search
+{% endblock %}
+
+{% block head %}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crime Reports Search</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        padding: 0;
+    }
+    h1 {
+        text-align: center;
+    }
+    .search-form {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f0f0f0;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .search-form label {
+        display: block;
+        margin-bottom: 8px;
+    }
+    .search-form input[type="text"],
+    .search-form input[type="date"] {
+        width: calc(50% - 10px);
+        margin-right: 10px;
+        padding: 8px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+    .search-form input[type="submit"] {
+        width: 100%;
+        padding: 10px;
+        font-size: 16px;
+        border: none;
+        background-color: #4CAF50;
+        color: white;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background-color 0.3s ease;
+    }
+    .search-form input[type="submit"]:hover {
+        background-color: #45a049;
+    }
+    #results {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    #results h3 {
+        margin-top: 0;
+    }
+    #results p {
+        margin-bottom: 0;
+    }
+    #map {
+        height: 600px !important;
+        width: 100%;
+        margin-top: 20px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .together {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        height: 50px;
+    }
+    .small-radio {
+        margin: 0; /* Adjust margin if needed */
+        width: auto;
+    }
+</style>
+{% endblock %}
+
+{% block main %}
+<div class="search-form">
+    <label for="search">Search by title or description:</label>
+    <input type="text" id="search" onkeyup="searchReports()" placeholder="Enter keywords">
+
+    <label for="date">Date:</label>
+    <input type="date" id="date" onchange="searchReports()">
+
+    <label for="latitude">Latitude:</label>
+    <input type="text" id="latitude" name="latitude" onchange="searchReports()">
+    
+    <label for="longitude">Longitude:</label>
+    <input type="text" id="longitude" name="longitude" onchange="searchReports()">
+
+    <label style="margin: 0;">Crime Type:</label>
+    <div class="together">
+        <div>
+            <input type="radio" class="small-radio" id="crimeTypeAll" name="crime_type" value="" checked onchange="searchReports()">
+            All
+        </div>
+        <div>
+            <input type="radio" class="small-radio" id="crimeTypeTheft" name="crime_type" value="theft" onchange="searchReports()">
+            Theft
+        </div>
+        <div>
+            <input type="radio" class="small-radio" id="crimeTypeAssault" name="crime_type" value="assault" onchange="searchReports()">
+            Assault
+        </div>
+        <div>
+            <input type="radio" class="small-radio" id="crimeTypeVandalism" name="crime_type" value="vandalism" onchange="searchReports()">
+            Vandalism
+        </div>
+        <div>
+            <input type="radio" class="small-radio" id="crimeTypeFraud" name="crime_type" value="fraud" onchange="searchReports()">
+            Fraud
+        </div>
+        <div>
+            <input type="radio" class="small-radio" id="crimeTypeOther" name="crime_type" value="other" onchange="searchReports()">
+            Other
+        </div>
+    </div>
+
+    <input type="submit" value="Search">
+</div>
+
+<div id="results"></div>
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize the map
+        var map = L.map('map').setView([22.6708, 71.5724], 8);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: 'Â© OpenStreetMap contributors'
+        }).addTo(map);
+
+        var marker;
+
+        // Add click event to the map for manual location selection
+        map.on('click', function(e) {
+            var lat = e.latlng.lat;
+            var lon = e.latlng.lng;
+            setMarker(lat, lon);
+        });
+
+        // Function to get the user's location
+        document.getElementById('getLocation').onclick = function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition);
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        };
+
+        // Show the position on the map
+        function showPosition(position) {
+            var lat = position.coords.latitude;
+            var lon = position.coords.longitude;
+            setMarker(lat, lon);
+        }
+
+        // Set marker on the map
+        function setMarker(lat, lon) {
+            if (marker) {
+                map.removeLayer(marker);
+            }
+            marker = L.marker([lat, lon]).addTo(map)
+                .bindPopup('Selected location')
+                .openPopup();
+            map.setView([lat, lon], 13);
+            document.getElementById('latitude').value = lat.toFixed(6);  // Limit to 6 decimal places
+            document.getElementById('longitude').value = lon.toFixed(6); // Limit to 6 decimal places
+            searchReports(); // Automatically trigger search when marker is set
+        }
+
+        // Function to handle crime reports search
+        function searchReports() {
+            const query = document.getElementById('search').value;
+            const date = document.getElementById('date').value;
+            const latitude = document.getElementById('latitude').value;
+            const longitude = document.getElementById('longitude').value;
+            let crimeType = document.querySelector('input[name="crime_type"]:checked');
+            crimeType = crimeType ? crimeType.value : '';
+
+            let url = `/search?`;
+
+            if (query) {
+                url += `q=${query}&`;
+            }
+            if (date) {
+                url += `date=${date}&`;
+            }
+            if (latitude && longitude) {
+                url += `lat=${latitude}&lng=${longitude}&`;
+            }
+            if (crimeType) {
+                url += `crime_type=${crimeType}&`;
+            }
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const resultsDiv = document.getElementById('results');
+                    resultsDiv.innerHTML = '';
+                    if (data.length > 0) {
+                        data.forEach(report => {
+                            const reportDiv = document.createElement('div');
+                            reportDiv.innerHTML = `<h3>${report.Title}</h3><p>${report.description}</p>`;
+                            resultsDiv.appendChild(reportDiv);
+                        });
+                    } else {
+                        resultsDiv.innerHTML = '<p>No results found</p>';
+                    }
+                });
+        }
+    });
+</script>
+{% endblock %}

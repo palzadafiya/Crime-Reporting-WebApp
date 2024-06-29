@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Log In
+{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="../static/styles.css" />
+{% endblock %}
+
+{% block main %}
+    <form action="/register" method="post">
+        <div class="mb-3">
+            <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name="name" placeholder="Name" type="text">
+        </div>
+        <div class="mb-3">
+            <input autocomplete="off" class="form-control mx-auto w-auto" name="username" placeholder="Username" type="text">
+        </div>
+        <div class="mb-3">
+            <input autocomplete="off" class="form-control mx-auto w-auto" name="contact" placeholder="Contact" type="text">
+        </div>
+        <div class="mb-3">
+            <input class="form-control mx-auto w-auto" name="password" placeholder="Password" type="password">
+        </div>
+        <div class="mb-3">
+            <input class="form-control mx-auto w-auto" name="vpassword" placeholder="Verify Password" type="password">
+        </div>
+        <div class="mb-3">
+            <select class="form-control mx-auto w-auto" name="role" required>
+                <option selected disabled>Select Authority</option>
+                <option value=1> Citizen </option>
+                <option value=2> Police </option>
+                <option value=3> Admin </option>
+            </select>
+        </div>
+        <button class="btn btn-primary" type="submit">Register</button>
+    </form>
+    {% if error %}
+        <small style="color: red;">{{ error }}</small>
+    {% endif %}
+{% endblock %}
